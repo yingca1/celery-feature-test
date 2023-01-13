@@ -1,14 +1,23 @@
 version: '3'
 services:
   redis:
-      image: redis:5.0.14-alpine3.15
-      restart: always
-      command: redis-server --requirepass celery-feature-test
+    image: redis:5.0.14-alpine3.15
+    restart: always
+    command: redis-server --requirepass celery-feature-test
+    ports:
+      - 16379:6379
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      - 15672:15672
   flower:
     image: caiying/flowerx:latest
     environment:
-      CELERY_BROKER_URL: redis://:celery-feature-test@redis/0
+      CELERY_BROKER_URL: amqp://rabbitmq:5672
+      # CELERY_BROKER_URL: redis://:celery-feature-test@redis/0
       CELERY_RESULT_BACKEND: redis://:celery-feature-test@redis/1
+    ports:
+      - 15555:5555
   runtime:
     image: 'cft1:${CODE_IMAGE_TAG}'
     restart: always
@@ -23,7 +32,8 @@ services:
     shm_size: 8G
     privileged: true
     environment:
-      CELERY_BROKER_URL: redis://:celery-feature-test@redis/0
+      CELERY_BROKER_URL: amqp://rabbitmq:5672
+      # CELERY_BROKER_URL: redis://:celery-feature-test@redis/0
       CELERY_RESULT_BACKEND: redis://:celery-feature-test@redis/1
       LARK_BOT_URL: ""
       CUDA_VISIBLE_DEVICES: ${GPU_INDEX}
