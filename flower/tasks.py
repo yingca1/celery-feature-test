@@ -11,3 +11,7 @@ celery.conf.mongodb_backend_settings = {
     'database': 'celery',
     'taskmeta_collection': 'celery_taskmeta',
 }
+
+@celery.task(name="blocking")
+def blocking(secs: float):
+    pass
