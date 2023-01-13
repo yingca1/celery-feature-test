@@ -1,0 +1,42 @@
+version: '3'
+services:
+  redis:
+      image: redis:5.0.14-alpine3.15
+      restart: always
+      command: redis-server --requirepass celery-feature-test
+  flower:
+    image: caiying/flowerx:latest
+    environment:
+      CELERY_BROKER_URL: redis://:celery-feature-test@redis/0
+      CELERY_RESULT_BACKEND: redis://:celery-feature-test@redis/1
+  runtime:
+    image: 'cft1:${CODE_IMAGE_TAG}'
+    restart: always
+    command:
+      - /bin/bash
+      - -c
+      - |
+        cd /code
+        pip install -r requirements.txt
+        apt update && apt install supervisor -y
+        /usr/bin/supervisord -c supervisord.conf
+    shm_size: 8G
+    privileged: true
+    environment:
+      CELERY_BROKER_URL: redis://:celery-feature-test@redis/0
+      CELERY_RESULT_BACKEND: redis://:celery-feature-test@redis/1
+      LARK_BOT_URL: ""
+      CUDA_VISIBLE_DEVICES: ${GPU_INDEX}
+      CUDA_LAUNCH_BLOCKING: 1
+      CUDA_DEVICE_ORDER: PCI_BUS_ID
+      CUDA_CACHE_MAXSIZE: 2147483647
+      CUDA_CACHE_DISABLE: 0
+    volumes:
+      - ./:/code
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ['${GPU_INDEX}']
+              capabilities: [gpu]
